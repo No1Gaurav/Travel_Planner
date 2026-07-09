@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voyager AI — IBM Watsonx Travel Planner</title>
+
+  <!-- Bootstrap 5.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── CSS Variables ─────────────────────────────────────── */
+    :root {
+      --primary:      #2563eb;
+      --primary-dark: #1d4ed8;
+      --accent:       #0ea5e9;
+      --success:      #10b981;
+      --warning:      #f59e0b;
+      --danger:       #ef4444;
+      --surface:      #f8fafc;
+      --border:       #e2e8f0;
+      --text:         #0f172a;
+      --text-muted:   #64748b;
+      --card-bg:      #ffffff;
+      --sidebar-bg:   #1e293b;
+      --sidebar-text: #cbd5e1;
+      --chat-user:    #2563eb;
+      --chat-ai:      #f1f5f9;
+      --shadow:       0 4px 24px rgba(0,0,0,.08);
+      --radius:       14px;
+      --transition:   .25s ease;
+    }
+    [data-bs-theme="dark"] {
+      --primary:      #3b82f6;
+      --accent:       #38bdf8;
+      --surface:      #0f172a;
+      --border:       #1e293b;
+      --text:         #f1f5f9;
+      --text-muted:   #94a3b8;
+      --card-bg:      #1e293b;
+      --sidebar-bg:   #0f172a;
+      --sidebar-text: #94a3b8;
+      --chat-user:    #3b82f6;
+      --chat-ai:      #1e293b;
+      --shadow:       0 4px 24px rgba(0,0,0,.4);
+    }
+
+    /* ── Base ───────────────────────────────────────────────── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--surface);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    .app-wrapper { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ────────────────────────────────────────────── */
+    .sidebar {
+      width: 260px;
+      min-height: 100vh;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      z-index: 100;
+      transition: transform var(--transition);
+    }
+    .sidebar-logo {
+      padding: 22px 20px 18px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .sidebar-logo .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 10px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; color: #fff; margin-right: 10px;
+    }
+    .sidebar-logo span { font-size: 1.1rem; font-weight: 700; color: #fff; }
+    .sidebar-logo small { display: block; font-size: .7rem; color: var(--sidebar-text); margin-top: 1px; }
+
+    .sidebar-nav { flex: 1; padding: 16px 12px; }
+    .nav-label {
+      font-size: .65rem; text-transform: uppercase; letter-spacing: .1em;
+      color: rgba(255,255,255,.3); padding: 12px 10px 6px;
+    }
+    .sidebar-nav .nav-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 10px;
+      color: var(--sidebar-text); font-size: .88rem; font-weight: 500;
+      transition: all var(--transition); cursor: pointer; margin-bottom: 2px;
+      text-decoration: none;
+    }
+    .sidebar-nav .nav-link i { font-size: 1rem; width: 20px; text-align: center; }
+    .sidebar-nav .nav-link:hover,
+    .sidebar-nav .nav-link.active {
+      background: rgba(255,255,255,.1); color: #fff;
+    }
+    .sidebar-nav .nav-link.active { background: var(--primary); color: #fff; }
+
+    .sidebar-footer {
+      padding: 16px; border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .powered-badge {
+      font-size: .7rem; color: rgba(255,255,255,.4); text-align: center;
+    }
+    .powered-badge span { color: var(--accent); font-weight: 600; }
+
+    /* ── Main content ───────────────────────────────────────── */
+    .main-content {
+      margin-left: 260px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ── Top-bar ────────────────────────────────────────────── */
+    .topbar {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 90;
+    }
+    .topbar h4 { font-weight: 700; font-size: 1.05rem; margin: 0; }
+    .topbar .meta { font-size: .8rem; color: var(--text-muted); }
+    .btn-theme {
+      border: 1px solid var(--border);
+      background: transparent; color: var(--text);
+      border-radius: 8px; padding: 6px 12px; font-size: .85rem;
+      cursor: pointer; transition: all var(--transition);
+    }
+    .btn-theme:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* ── Sections ───────────────────────────────────────────── */
+    .section { display: none; padding: 28px; animation: fadeIn .3s ease; }
+    .section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    /* ── Cards ──────────────────────────────────────────────── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .card-header-custom {
+      padding: 18px 22px 0;
+      font-weight: 600; font-size: .95rem;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-header-custom i { color: var(--primary); }
+
+    /* ── Hero / Dashboard ───────────────────────────────────── */
+    .hero-banner {
+      background: linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 50%, #0ea5e9 100%);
+      border-radius: var(--radius);
+      padding: 36px 32px;
+      color: #fff;
+      margin-bottom: 24px;
+      position: relative; overflow: hidden;
+    }
+    .hero-banner::after {
+      content: '✈';
+      position: absolute; right: 32px; top: 50%; transform: translateY(-50%);
+      font-size: 5rem; opacity: .12;
+    }
+    .hero-banner h2 { font-weight: 800; font-size: 1.8rem; margin-bottom: 8px; }
+    .hero-banner p  { opacity: .85; margin: 0; font-size: .95rem; }
+
+    /* ── Stat cards ─────────────────────────────────────────── */
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .stat-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; flex-shrink: 0;
+    }
+    .stat-icon.blue   { background: #eff6ff; color: var(--primary); }
+    .stat-icon.green  { background: #f0fdf4; color: var(--success); }
+    .stat-icon.amber  { background: #fffbeb; color: var(--warning); }
+    .stat-icon.purple { background: #faf5ff; color: #7c3aed; }
+    [data-bs-theme="dark"] .stat-icon.blue   { background: rgba(37,99,235,.15); }
+    [data-bs-theme="dark"] .stat-icon.green  { background: rgba(16,185,129,.15); }
+    [data-bs-theme="dark"] .stat-icon.amber  { background: rgba(245,158,11,.15); }
+    [data-bs-theme="dark"] .stat-icon.purple { background: rgba(124,58,237,.15); }
+    .stat-value { font-size: 1.4rem; font-weight: 700; }
+    .stat-label { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Chat UI ────────────────────────────────────────────── */
+    .chat-container {
+      display: flex; flex-direction: column;
+      height: calc(100vh - 200px); min-height: 480px;
+    }
+    .chat-messages {
+      flex: 1; overflow-y: auto; padding: 20px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .chat-messages::-webkit-scrollbar { width: 5px; }
+    .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    .msg { display: flex; gap: 10px; align-items: flex-end; animation: msgIn .25s ease; }
+    @keyframes msgIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+    .msg.user  { flex-direction: row-reverse; }
+    .msg-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem; flex-shrink: 0;
+    }
+    .msg.user  .msg-avatar { background: var(--primary); color: #fff; }
+    .msg.ai    .msg-avatar { background: linear-gradient(135deg,#0ea5e9,#2563eb); color: #fff; }
+
+    .msg-bubble {
+      max-width: 72%; padding: 12px 16px;
+      border-radius: 16px; font-size: .88rem; line-height: 1.6;
+      word-wrap: break-word; white-space: pre-wrap;
+    }
+    .msg.user .msg-bubble {
+      background: var(--primary); color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .msg.ai .msg-bubble {
+      background: var(--chat-ai); color: var(--text);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .msg-time { font-size: .68rem; color: var(--text-muted); margin-top: 4px; }
+
+    .chat-input-bar {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--card-bg);
+      border-radius: 0 0 var(--radius) var(--radius);
+    }
+    .chat-input-bar .input-group {
+      border: 1.5px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+      background: var(--surface);
+    }
+    .chat-input-bar textarea {
+      border: none; background: transparent; resize: none;
+      color: var(--text); font-size: .9rem; padding: 12px 14px;
+      outline: none; flex: 1; min-height: 44px; max-height: 120px;
+    }
+    .chat-input-bar textarea::placeholder { color: var(--text-muted); }
+    .btn-send {
+      background: var(--primary); color: #fff; border: none;
+      padding: 0 18px; cursor: pointer; font-size: 1rem;
+      transition: background var(--transition);
+    }
+    .btn-send:hover { background: var(--primary-dark); }
+
+    .quick-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 20px 12px; }
+    .quick-chip {
+      font-size: .75rem; padding: 5px 12px;
+      border: 1px solid var(--primary); color: var(--primary);
+      border-radius: 99px; cursor: pointer; background: transparent;
+      transition: all var(--transition);
+    }
+    .quick-chip:hover { background: var(--primary); color: #fff; }
+
+    .typing-indicator { display: flex; align-items: center; gap: 4px; padding: 10px 14px; }
+    .typing-dot {
+      width: 7px; height: 7px; background: var(--text-muted);
+      border-radius: 50%; animation: bounce 1.2s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: .2s; }
+    .typing-dot:nth-child(3) { animation-delay: .4s; }
+    @keyframes bounce { 0%,80%,100% { transform: scale(.8); } 40% { transform: scale(1.2); } }
+
+    /* ── Itinerary ──────────────────────────────────────────── */
+    .itinerary-output {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px; margin-top: 16px;
+      white-space: pre-wrap; font-size: .88rem; line-height: 1.8;
+      max-height: 540px; overflow-y: auto;
+    }
+    .itinerary-output::-webkit-scrollbar { width: 5px; }
+    .itinerary-output::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    /* ── Budget ─────────────────────────────────────────────── */
+    .budget-bar-wrap { margin-bottom: 10px; }
+    .budget-bar-label {
+      display: flex; justify-content: space-between;
+      font-size: .82rem; margin-bottom: 4px;
+    }
+    .budget-bar-track {
+      height: 10px; background: var(--border);
+      border-radius: 99px; overflow: hidden;
+    }
+    .budget-bar-fill {
+      height: 100%; border-radius: 99px;
+      transition: width 1s ease;
+    }
+
+    /* ── Profile ────────────────────────────────────────────── */
+    .profile-avatar {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; color: #fff; margin: 0 auto 12px;
+    }
+    .profile-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 99px; font-size: .78rem; font-weight: 500;
+    }
+    .traveler-card {
+      border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px;
+      display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+      background: var(--surface);
+    }
+    .traveler-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--primary); color: #fff;
+      display: flex; align-items: center; justify-content: center; font-size: .9rem;
+    }
+
+    /* ── Recommendation cards ────────────────────────────────── */
+    .rec-output {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px; margin-top: 16px;
+      white-space: pre-wrap; font-size: .88rem; line-height: 1.8;
+      max-height: 480px; overflow-y: auto;
+    }
+
+    /* ── Utility ────────────────────────────────────────────── */
+    .spinner-ring {
+      width: 22px; height: 22px; border: 3px solid rgba(255,255,255,.3);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin .7s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .badge-ibm {
+      background: linear-gradient(90deg,#0f62fe,#4589ff);
+      color: #fff; font-size: .68rem; font-weight: 600;
+      padding: 2px 8px; border-radius: 4px; letter-spacing: .03em;
+    }
+
+    /* ── Mobile ─────────────────────────────────────────────── */
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.5); z-index: 99;
+    }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.show { display: block; }
+      .main-content { margin-left: 0; }
+      .section { padding: 16px; }
+      .topbar { padding: 12px 16px; }
+      .hero-banner { padding: 24px 20px; }
+      .hero-banner::after { display: none; }
+      .msg-bubble { max-width: 85%; }
+    }
+  </style>
+</head>
+<body>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<div class="app-wrapper">
+  <!-- ── Sidebar ─────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="d-flex align-items-center">
+        <div class="logo-icon"><i class="bi bi-airplane-engines-fill"></i></div>
+        <div>
+          <span>Voyager AI</span>
+          <small>IBM Watsonx Travel Planner</small>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-label">Navigation</div>
+      <a class="nav-link active" onclick="showSection('dashboard')" id="nav-dashboard">
+        <i class="bi bi-grid-1x2-fill"></i> Dashboard
+      </a>
+      <a class="nav-link" onclick="showSection('chat')" id="nav-chat">
+        <i class="bi bi-chat-dots-fill"></i> AI Chat Planner
+      </a>
+      <a class="nav-link" onclick="showSection('itinerary')" id="nav-itinerary">
+        <i class="bi bi-calendar3-week-fill"></i> Smart Itinerary
+      </a>
+      <a class="nav-link" onclick="showSection('budget')" id="nav-budget">
+        <i class="bi bi-wallet2"></i> Budget Dashboard
+      </a>
+      <a class="nav-link" onclick="showSection('recommendations')" id="nav-recommendations">
+        <i class="bi bi-compass-fill"></i> Recommendations
+      </a>
+
+      <div class="nav-label" style="margin-top:8px;">Settings</div>
+      <a class="nav-link" onclick="showSection('profile')" id="nav-profile">
+        <i class="bi bi-person-fill"></i> Traveler Profile
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="powered-badge">Powered by <span>IBM Watsonx.ai</span><br>Granite-3.3-8B Instruct</div>
+    </div>
+  </aside>
+
+  <!-- ── Main ────────────────────────────────────────────── -->
+  <main class="main-content">
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-sm btn-outline-secondary d-md-none" onclick="openSidebar()">
+          <i class="bi bi-list"></i>
+        </button>
+        <div>
+          <h4 id="topbar-title">Dashboard</h4>
+          <span class="meta" id="topbar-meta">Welcome back, Traveler!</span>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge-ibm">IBM Watsonx.ai</span>
+        <button class="btn-theme" onclick="toggleTheme()" title="Toggle dark mode">
+          <i class="bi bi-moon-stars-fill" id="theme-icon"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Dashboard ─────────────────────────────────────── -->
+    <section class="section active" id="section-dashboard">
+      <div class="hero-banner">
+        <h2>Where do you want to go next?</h2>
+        <p>Your AI-powered travel companion — itineraries, budgets, and personalised recommendations, all in one place.</p>
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <button class="btn btn-light btn-sm fw-600" onclick="showSection('chat')">
+            <i class="bi bi-chat-dots-fill me-1"></i>Ask Voyager AI
+          </button>
+          <button class="btn btn-outline-light btn-sm" onclick="showSection('itinerary')">
+            <i class="bi bi-calendar3-week-fill me-1"></i>Plan Itinerary
+          </button>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="bi bi-map-fill"></i></div>
+            <div>
+              <div class="stat-value" id="stat-trips">0</div>
+              <div class="stat-label">Trips Planned</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="bi bi-chat-dots-fill"></i></div>
+            <div>
+              <div class="stat-value" id="stat-chats">0</div>
+              <div class="stat-label">AI Conversations</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="stat-card">
+            <div class="stat-icon amber"><i class="bi bi-currency-dollar"></i></div>
+            <div>
+              <div class="stat-value" id="stat-budget">$0</div>
+              <div class="stat-label">Budget Analysed</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="stat-card">
+            <div class="stat-icon purple"><i class="bi bi-people-fill"></i></div>
+            <div>
+              <div class="stat-value" id="stat-travelers">1</div>
+              <div class="stat-label">Travelers</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick access -->
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card p-3">
+            <div class="card-header-custom mb-3"><i class="bi bi-lightning-charge-fill"></i>Quick Plan</div>
+            <div class="mb-2">
+              <label class="form-label small">Destination</label>
+              <input type="text" class="form-control" id="quick-dest" placeholder="e.g. Paris, Japan, Bali…" />
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col">
+                <label class="form-label small">Days</label>
+                <input type="number" class="form-control" id="quick-days" value="5" min="1" max="30" />
+              </div>
+              <div class="col">
+                <label class="form-label small">Budget</label>
+                <select class="form-select" id="quick-budget">
+                  <option value="budget">Budget</option>
+                  <option value="moderate" selected>Moderate</option>
+                  <option value="luxury">Luxury</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary w-100" onclick="quickPlan()">
+              <i class="bi bi-airplane-fill me-1"></i>Generate Plan
+            </button>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card p-3">
+            <div class="card-header-custom mb-3"><i class="bi bi-info-circle-fill"></i>Agent Status</div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="badge bg-success">Online</span>
+              <span class="small text-muted">Granite-3.3-8B Instruct</span>
+            </div>
+            <div class="small text-muted mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i>AI Chat Planner ready</div>
+            <div class="small text-muted mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i>Itinerary generator ready</div>
+            <div class="small text-muted mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i>Budget analyser ready</div>
+            <div class="small text-muted mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i>Recommendations ready</div>
+            <button class="btn btn-outline-secondary btn-sm mt-2" onclick="checkHealth()">
+              <i class="bi bi-activity me-1"></i>Check Health
+            </button>
+            <span class="ms-2 small" id="health-status"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── AI Chat ─────────────────────────────────────────── -->
+    <section class="section" id="section-chat">
+      <div class="card chat-container">
+        <div class="card-header-custom pt-3 pb-2">
+          <i class="bi bi-chat-dots-fill"></i>
+          AI Chat Planner
+          <span class="badge bg-primary ms-auto">Voyager AI</span>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="msg ai">
+            <div class="msg-avatar"><i class="bi bi-airplane-engines-fill"></i></div>
+            <div>
+              <div class="msg-bubble">
+                👋 Hello! I'm <strong>Voyager AI</strong>, your personal travel planner powered by IBM Watsonx.ai.<br><br>
+                I can help you plan trips, suggest destinations, estimate budgets, recommend hotels &amp; cafés, and create day-by-day itineraries. Where would you like to explore today?
+              </div>
+              <div class="msg-time">Just now</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="quick-actions">
+          <button class="quick-chip" onclick="sendQuick('Best destinations for a family trip in Europe')">🏰 Europe family trip</button>
+          <button class="quick-chip" onclick="sendQuick('Top budget-friendly destinations in Asia')">💰 Budget Asia</button>
+          <button class="quick-chip" onclick="sendQuick('Luxury honeymoon destinations 2025')">💑 Luxury honeymoon</button>
+          <button class="quick-chip" onclick="sendQuick('Best cafés and hidden gems in Tokyo')">☕ Tokyo gems</button>
+          <button class="quick-chip" onclick="sendQuick('Solo travel safety tips for South America')">🎒 Solo travel tips</button>
+        </div>
+
+        <div class="chat-input-bar">
+          <div class="input-group">
+            <textarea id="chatInput" placeholder="Ask about destinations, hotels, itineraries, budget…" rows="1"
+              onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+            <button class="btn-send" onclick="sendChatMessage()" id="sendBtn">
+              <i class="bi bi-send-fill"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Smart Itinerary ─────────────────────────────────── -->
+    <section class="section" id="section-itinerary">
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="card p-3">
+            <div class="card-header-custom mb-3"><i class="bi bi-calendar3-week-fill"></i>Generate Itinerary</div>
+            <div class="mb-3">
+              <label class="form-label small fw-600">Destination *</label>
+              <input type="text" class="form-control" id="itin-dest" placeholder="e.g. Rome, Italy" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-600">Number of Days</label>
+              <input type="range" class="form-range" id="itin-days" min="1" max="21" value="5"
+                oninput="document.getElementById('itin-days-val').textContent=this.value" />
+              <div class="d-flex justify-content-between small text-muted">
+                <span>1</span><span id="itin-days-val" class="text-primary fw-600">5</span><span>21</span>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-600">Trip Style</label>
+              <select class="form-select" id="itin-style">
+                <option value="cultural">Cultural &amp; Historical</option>
+                <option value="adventure">Adventure</option>
+                <option value="relaxation">Relaxation &amp; Wellness</option>
+                <option value="family">Family Fun</option>
+                <option value="romantic">Romantic</option>
+                <option value="backpacking">Backpacking</option>
+                <option value="business">Business</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-600">Budget Tier</label>
+              <select class="form-select" id="itin-budget">
+                <option value="budget">Budget ($)</option>
+                <option value="moderate" selected>Moderate ($$)</option>
+                <option value="luxury">Luxury ($$$)</option>
+              </select>
+            </div>
+            <button class="btn btn-primary w-100" onclick="generateItinerary()" id="itin-btn">
+              <i class="bi bi-stars me-1"></i>Generate with AI
+            </button>
+          </div>
+        </div>
+
+        <div class="col-lg-8">
+          <div class="card p-3" style="min-height:400px;">
+            <div class="card-header-custom mb-2">
+              <i class="bi bi-map-fill"></i>Your Itinerary
+              <button class="btn btn-outline-secondary btn-sm ms-auto" onclick="copyItinerary()" id="copy-itin-btn" style="display:none;">
+                <i class="bi bi-clipboard"></i> Copy
+              </button>
+            </div>
+            <div id="itin-placeholder" class="text-center text-muted py-5">
+              <i class="bi bi-calendar3 fs-1 d-block mb-2" style="opacity:.3;"></i>
+              Fill in the form and click <strong>Generate with AI</strong> to create your personalised itinerary.
+            </div>
+            <div class="itinerary-output" id="itinerary-output" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Budget Dashboard ───────────────────────────────── -->
+    <section class="section" id="section-budget">
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="card p-3">
+            <div class="card-header-custom mb-3"><i class="bi bi-calculator-fill"></i>Budget Calculator</div>
+            <div class="mb-3">
+              <label class="form-label small fw-600">Destination *</label>
+              <input type="text" class="form-control" id="budget-dest" placeholder="e.g. Bali, Indonesia" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-600">Trip Duration (Days)</label>
+              <input type="number" class="form-control" id="budget-days" value="7" min="1" max="90" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-600">Adults</label>
+              <input type="number" class="form-control" id="budget-adults" value="2" min="1" max="20" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-600">Children</label>
+              <input type="number" class="form-control" id="budget-children" value="0" min="0" max="10" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-600">Budget Tier</label>
+              <select class="form-select" id="budget-tier">
+                <option value="budget">Budget ($)</option>
+                <option value="moderate" selected>Moderate ($$)</option>
+                <option value="luxury">Luxury ($$$)</option>
+              </select>
+            </div>
+            <button class="btn btn-primary w-100" onclick="generateBudget()" id="budget-btn">
+              <i class="bi bi-pie-chart-fill me-1"></i>Analyse Budget
+            </button>
+          </div>
+        </div>
+
+        <div class="col-lg-8">
+          <div class="card p-3" style="min-height:400px;">
+            <div class="card-header-custom mb-3"><i class="bi bi-bar-chart-fill"></i>Budget Breakdown</div>
+            <div id="budget-placeholder" class="text-center text-muted py-5">
+              <i class="bi bi-wallet2 fs-1 d-block mb-2" style="opacity:.3;"></i>
+              Enter trip details and click <strong>Analyse Budget</strong>.
+            </div>
+            <div id="budget-results" style="display:none;">
+              <div class="row g-2 mb-3" id="budget-totals"></div>
+              <div id="budget-bars"></div>
+              <div id="budget-tips" class="mt-3"></div>
+            </div>
+            <div id="budget-raw" class="itinerary-output" style="display:none; margin-top:12px;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Recommendations ───────────────────────────────── -->
+    <section class="section" id="section-recommendations">
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="card p-3">
+            <div class="card-header-custom mb-3"><i class="bi bi-compass-fill"></i>Discover Destinations</div>
+            <div class="mb-3">
+              <label class="form-label small fw-600">What are you looking for?</label>
+              <textarea class="form-control" id="rec-query" rows="4"
+                placeholder="e.g. Hidden gems in Southeast Asia for a couple on a moderate budget who love food and history…"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-600">Trip Style</label>
+              <select class="form-select" id="rec-style">
+                <option value="cultural">Cultural</option>
+                <option value="adventure">Adventure</option>
+                <option value="relaxation">Relaxation</option>
+                <option value="family">Family</option>
+                <option value="romantic">Romantic</option>
+                <option value="backpacking">Backpacking</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-600">Budget</label>
+              <select class="form-select" id="rec-budget">
+                <option value="budget">Budget</option>
+                <option value="moderate" selected>Moderate</option>
+                <option value="luxury">Luxury</option>
+              </select>
+            </div>
+            <button class="btn btn-primary w-100" onclick="getRecommendations()" id="rec-btn">
+              <i class="bi bi-stars me-1"></i>Get AI Recommendations
+            </button>
+          </div>
+        </div>
+
+        <div class="col-lg-8">
+          <div class="card p-3" style="min-height:400px;">
+            <div class="card-header-custom mb-2"><i class="bi bi-geo-alt-fill"></i>AI Recommendations</div>
+            <div id="rec-placeholder" class="text-center text-muted py-5">
+              <i class="bi bi-compass fs-1 d-block mb-2" style="opacity:.3;"></i>
+              Describe your ideal trip and let Voyager AI discover the perfect destinations.
+            </div>
+            <div class="rec-output" id="rec-output" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Traveler Profile ───────────────────────────────── -->
+    <section class="section" id="section-profile">
+      <div class="row g-3">
+        <!-- Profile card -->
+        <div class="col-lg-4">
+          <div class="card p-3 text-center">
+            <div class="profile-avatar mx-auto"><i class="bi bi-person-fill"></i></div>
+            <h5 id="prof-display-name" class="fw-700 mb-1">Traveler</h5>
+            <div id="prof-display-group" class="text-muted small mb-3">Solo</div>
+            <div class="d-flex justify-content-center flex-wrap gap-2 mb-3">
+              <span class="profile-badge bg-primary bg-opacity-10 text-primary" id="badge-budget">Moderate</span>
+              <span class="profile-badge bg-success bg-opacity-10 text-success" id="badge-style">Cultural</span>
+            </div>
+            <hr />
+            <div class="text-start">
+              <div class="small text-muted mb-1"><i class="bi bi-people-fill me-1"></i>Group Members</div>
+              <div id="members-list"></div>
+              <button class="btn btn-outline-primary btn-sm w-100 mt-2" onclick="addMemberUI()">
+                <i class="bi bi-person-plus-fill me-1"></i>Add Traveler
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit profile -->
+        <div class="col-lg-8">
+          <div class="card p-3">
+            <div class="card-header-custom mb-3"><i class="bi bi-pencil-fill"></i>Edit Profile</div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-600">Your Name</label>
+                <input type="text" class="form-control" id="prof-name" placeholder="e.g. Alex" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-600">Group Type</label>
+                <select class="form-select" id="prof-group">
+                  <option value="solo">Solo</option>
+                  <option value="couple" selected>Couple</option>
+                  <option value="family">Family</option>
+                  <option value="group of friends">Group of Friends</option>
+                  <option value="business group">Business Group</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-600">Adults</label>
+                <input type="number" class="form-control" id="prof-adults" value="2" min="1" max="20" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-600">Children</label>
+                <input type="number" class="form-control" id="prof-children" value="0" min="0" max="10" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-600">Preferred Budget</label>
+                <select class="form-select" id="prof-budget">
+                  <option value="budget">Budget ($)</option>
+                  <option value="moderate" selected>Moderate ($$)</option>
+                  <option value="luxury">Luxury ($$$)</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-600">Trip Style</label>
+                <select class="form-select" id="prof-style">
+                  <option value="cultural" selected>Cultural</option>
+                  <option value="adventure">Adventure</option>
+                  <option value="relaxation">Relaxation</option>
+                  <option value="family">Family</option>
+                  <option value="romantic">Romantic</option>
+                  <option value="backpacking">Backpacking</option>
+                  <option value="business">Business</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-600">Special Requirements / Preferences</label>
+                <textarea class="form-control" id="prof-prefs" rows="2"
+                  placeholder="e.g. vegetarian, wheelchair access, pet-friendly, halal food…"></textarea>
+              </div>
+              <div class="col-12">
+                <button class="btn btn-primary" onclick="saveProfile()">
+                  <i class="bi bi-check-circle-fill me-1"></i>Save Profile
+                </button>
+                <span class="text-success ms-2 small" id="prof-saved" style="display:none;">
+                  <i class="bi bi-check2"></i> Saved!
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  Voyager AI — Frontend Controller
+// ═══════════════════════════════════════════════════════════════════
+
+// ── State ──────────────────────────────────────────────────────────
+const state = {
+  chatHistory: [],
+  profile: {
+    name: 'Traveler', group_type: 'couple', travelers: 2,
+    children: 0, budget: 'moderate', trip_style: 'cultural',
+    preferences: '', members: []
+  },
+  stats: { trips: 0, chats: 0, budget: 0 }
+};
+
+const topbarMeta = {
+  dashboard:       'Welcome back, Traveler!',
+  chat:            'Ask Voyager AI anything about your trip',
+  itinerary:       'AI-generated day-by-day travel plans',
+  budget:          'Smart cost estimates for your journey',
+  recommendations: 'Discover hidden gems worldwide',
+  profile:         'Manage your traveler preferences',
+};
+const topbarTitles = {
+  dashboard:       'Dashboard',
+  chat:            'AI Chat Planner',
+  itinerary:       'Smart Itinerary Planner',
+  budget:          'Budget Dashboard',
+  recommendations: 'Destination Recommendations',
+  profile:         'Traveler Profile',
+};
+
+// ── Navigation ─────────────────────────────────────────────────────
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sidebar-nav .nav-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  document.getElementById('topbar-title').textContent  = topbarTitles[name] || name;
+  document.getElementById('topbar-meta').textContent   = topbarMeta[name]   || '';
+  closeSidebar();
+}
+function openSidebar()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarOverlay').classList.add('show'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); }
+
+// ── Dark mode ──────────────────────────────────────────────────────
+let darkMode = localStorage.getItem('darkMode') === '1';
+applyTheme();
+function toggleTheme() { darkMode = !darkMode; localStorage.setItem('darkMode', darkMode ? '1' : '0'); applyTheme(); }
+function applyTheme() {
+  document.documentElement.setAttribute('data-bs-theme', darkMode ? 'dark' : 'light');
+  document.getElementById('theme-icon').className = darkMode ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
+}
+
+// ── Profile ────────────────────────────────────────────────────────
+function getProfile() {
+  return {
+    name: document.getElementById('prof-name').value || 'Traveler',
+    group_type: document.getElementById('prof-group').value,
+    travelers:  parseInt(document.getElementById('prof-adults').value) || 2,
+    children:   parseInt(document.getElementById('prof-children').value) || 0,
+    budget:     document.getElementById('prof-budget').value,
+    trip_style: document.getElementById('prof-style').value,
+    preferences: document.getElementById('prof-prefs').value,
+    members: state.profile.members,
+  };
+}
+function saveProfile() {
+  const p = getProfile();
+  state.profile = p;
+  document.getElementById('prof-display-name').textContent  = p.name;
+  document.getElementById('prof-display-group').textContent = p.group_type + ` · ${p.travelers} adults, ${p.children} children`;
+  document.getElementById('badge-budget').textContent = { budget:'Budget $', moderate:'Moderate $$', luxury:'Luxury $$$' }[p.budget] || p.budget;
+  document.getElementById('badge-style').textContent  = p.trip_style.charAt(0).toUpperCase() + p.trip_style.slice(1);
+  document.getElementById('stat-travelers').textContent = p.travelers + p.children;
+  const saved = document.getElementById('prof-saved');
+  saved.style.display = 'inline';
+  setTimeout(() => { saved.style.display = 'none'; }, 2000);
+  renderMembers();
+  localStorage.setItem('voyager_profile', JSON.stringify(p));
+}
+function loadProfile() {
+  const saved = localStorage.getItem('voyager_profile');
+  if (!saved) return;
+  const p = JSON.parse(saved);
+  state.profile = p;
+  document.getElementById('prof-name').value     = p.name;
+  document.getElementById('prof-group').value    = p.group_type;
+  document.getElementById('prof-adults').value   = p.travelers;
+  document.getElementById('prof-children').value = p.children;
+  document.getElementById('prof-budget').value   = p.budget;
+  document.getElementById('prof-style').value    = p.trip_style;
+  document.getElementById('prof-prefs').value    = p.preferences;
+  document.getElementById('prof-display-name').textContent  = p.name;
+  document.getElementById('prof-display-group').textContent = p.group_type + ` · ${p.travelers} adults, ${p.children} children`;
+  document.getElementById('badge-budget').textContent = { budget:'Budget $', moderate:'Moderate $$', luxury:'Luxury $$$' }[p.budget] || p.budget;
+  document.getElementById('badge-style').textContent  = p.trip_style.charAt(0).toUpperCase() + p.trip_style.slice(1);
+  document.getElementById('stat-travelers').textContent = p.travelers + p.children;
+  renderMembers();
+}
+function addMemberUI() {
+  const name = prompt('Enter traveler name:');
+  if (!name) return;
+  state.profile.members.push({ name, type: 'adult' });
+  renderMembers();
+}
+function renderMembers() {
+  const list = document.getElementById('members-list');
+  if (!state.profile.members.length) { list.innerHTML = '<div class="small text-muted">No members added.</div>'; return; }
+  list.innerHTML = state.profile.members.map((m, i) => `
+    <div class="traveler-card">
+      <div class="traveler-avatar"><i class="bi bi-person-fill"></i></div>
+      <div class="flex-grow-1"><div class="small fw-600">${m.name}</div><div class="text-muted" style="font-size:.72rem;">${m.type}</div></div>
+      <button class="btn btn-sm btn-outline-danger" onclick="removeMember(${i})"><i class="bi bi-trash"></i></button>
+    </div>`).join('');
+}
+function removeMember(i) { state.profile.members.splice(i, 1); renderMembers(); }
+
+// ── Chat ───────────────────────────────────────────────────────────
+function handleChatKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }
+function autoResize(el)   { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+function sendQuick(msg)   { document.getElementById('chatInput').value = msg; sendChatMessage(); }
+
+function appendMsg(role, content) {
+  const box = document.getElementById('chatMessages');
+  const now  = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  const div  = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="msg-avatar"><i class="bi bi-${role==='user'?'person-fill':'airplane-engines-fill'}"></i></div>
+    <div>
+      <div class="msg-bubble">${escHtml(content)}</div>
+      <div class="msg-time">${now}</div>
+    </div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+function showTyping() {
+  const box  = document.getElementById('chatMessages');
+  const div  = document.createElement('div');
+  div.id     = 'typing-indicator';
+  div.className = 'msg ai';
+  div.innerHTML = `
+    <div class="msg-avatar"><i class="bi bi-airplane-engines-fill"></i></div>
+    <div class="msg-bubble" style="padding:10px 14px;">
+      <div class="typing-indicator">
+        <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+      </div>
+    </div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+function hideTyping() { document.getElementById('typing-indicator')?.remove(); }
+
+async function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const msg   = input.value.trim();
+  if (!msg) return;
+  input.value = ''; input.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+
+  appendMsg('user', msg);
+  state.chatHistory.push({ role: 'user', content: msg });
+  state.stats.chats++;
+  document.getElementById('stat-chats').textContent = state.stats.chats;
+  showTyping();
+
+  try {
+    const res  = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, profile: getProfile(), history: state.chatHistory }),
+    });
+    const data = await res.json();
+    hideTyping();
+    const reply = data.response || data.error || 'Sorry, I could not get a response.';
+    appendMsg('ai', reply);
+    state.chatHistory.push({ role: 'assistant', content: reply });
+  } catch (err) {
+    hideTyping();
+    appendMsg('ai', `Connection error: ${err.message}`);
+  } finally {
+    document.getElementById('sendBtn').disabled = false;
+  }
+}
+
+// ── Itinerary ──────────────────────────────────────────────────────
+async function generateItinerary() {
+  const dest = document.getElementById('itin-dest').value.trim();
+  if (!dest) { alert('Please enter a destination.'); return; }
+  const days    = document.getElementById('itin-days').value;
+  const btn     = document.getElementById('itin-btn');
+  const output  = document.getElementById('itinerary-output');
+  const ph      = document.getElementById('itin-placeholder');
+  const copyBtn = document.getElementById('copy-itin-btn');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-ring"></span> Generating…';
+  ph.style.display = 'none';
+  output.style.display = 'none';
+  output.textContent = '';
+  copyBtn.style.display = 'none';
+
+  const profile = { ...getProfile(), trip_style: document.getElementById('itin-style').value, budget: document.getElementById('itin-budget').value };
+
+  try {
+    const res  = await fetch('/api/itinerary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ destination: dest, days: parseInt(days), profile }),
+    });
+    const data = await res.json();
+    output.textContent   = data.itinerary || data.error;
+    output.style.display = 'block';
+    copyBtn.style.display = 'block';
+    state.stats.trips++;
+    document.getElementById('stat-trips').textContent = state.stats.trips;
+  } catch (err) {
+    output.textContent   = `Error: ${err.message}`;
+    output.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-stars me-1"></i>Generate with AI';
+  }
+}
+function copyItinerary() {
+  navigator.clipboard.writeText(document.getElementById('itinerary-output').textContent);
+  const btn = document.getElementById('copy-itin-btn');
+  btn.innerHTML = '<i class="bi bi-check2"></i> Copied!';
+  setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy'; }, 2000);
+}
+
+// ── Budget ─────────────────────────────────────────────────────────
+const BAR_COLORS = {
+  accommodation: '#3b82f6', food: '#10b981', transport: '#f59e0b',
+  activities: '#8b5cf6', shopping: '#ec4899', miscellaneous: '#64748b',
+};
+async function generateBudget() {
+  const dest = document.getElementById('budget-dest').value.trim();
+  if (!dest) { alert('Please enter a destination.'); return; }
+  const btn  = document.getElementById('budget-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-ring"></span> Analysing…';
+
+  const profile = {
+    ...getProfile(),
+    travelers: parseInt(document.getElementById('budget-adults').value),
+    children:  parseInt(document.getElementById('budget-children').value),
+    budget:    document.getElementById('budget-tier').value,
+  };
+
+  try {
+    const res  = await fetch('/api/budget', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ destination: dest, days: parseInt(document.getElementById('budget-days').value), profile }),
+    });
+    const data = await res.json();
+
+    document.getElementById('budget-placeholder').style.display = 'none';
+    const resultsEl = document.getElementById('budget-results');
+    const rawEl     = document.getElementById('budget-raw');
+
+    if (data.budget) {
+      resultsEl.style.display = 'block';
+      rawEl.style.display     = 'none';
+      renderBudgetChart(data.budget, dest);
+      const totalVal = data.budget.total_estimated || 0;
+      state.stats.budget = Math.max(state.stats.budget, totalVal);
+      document.getElementById('stat-budget').textContent = '$' + state.stats.budget.toLocaleString();
+    } else {
+      resultsEl.style.display = 'none';
+      rawEl.textContent       = data.raw || 'No data returned.';
+      rawEl.style.display     = 'block';
+    }
+  } catch (err) {
+    document.getElementById('budget-raw').textContent   = `Error: ${err.message}`;
+    document.getElementById('budget-raw').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-pie-chart-fill me-1"></i>Analyse Budget';
+  }
+}
+function renderBudgetChart(budget, dest) {
+  const categories = ['accommodation','food','transport','activities','shopping','miscellaneous'];
+  const total      = budget.total_estimated || categories.reduce((s, k) => s + (budget[k] || 0), 0);
+
+  document.getElementById('budget-totals').innerHTML = `
+    <div class="col-6 col-md-3"><div class="stat-card"><div class="stat-icon blue"><i class="bi bi-currency-dollar"></i></div>
+      <div><div class="stat-value">$${total.toLocaleString()}</div><div class="stat-label">Total Est.</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card"><div class="stat-icon green"><i class="bi bi-geo-alt-fill"></i></div>
+      <div><div class="stat-value" style="font-size:1rem;">${dest}</div><div class="stat-label">Destination</div></div></div></div>`;
+
+  document.getElementById('budget-bars').innerHTML = categories.map(k => {
+    const val  = budget[k] || 0;
+    const pct  = total > 0 ? Math.round((val / total) * 100) : 0;
+    const col  = BAR_COLORS[k] || '#64748b';
+    return `<div class="budget-bar-wrap">
+      <div class="budget-bar-label">
+        <span class="text-capitalize">${k}</span>
+        <span><strong>$${val.toLocaleString()}</strong> <span class="text-muted">(${pct}%)</span></span>
+      </div>
+      <div class="budget-bar-track"><div class="budget-bar-fill" style="width:0%; background:${col};" data-target="${pct}"></div></div>
+    </div>`;
+  }).join('');
+
+  // Animate bars
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.budget-bar-fill').forEach(b => {
+      b.style.width = b.dataset.target + '%';
+    });
+  });
+
+  if (budget.savings_tips && budget.savings_tips.length) {
+    document.getElementById('budget-tips').innerHTML = `
+      <div class="card-header-custom mb-2"><i class="bi bi-lightbulb-fill text-warning"></i> Savings Tips</div>
+      <ul class="small text-muted mb-0">${budget.savings_tips.map(t => `<li>${escHtml(t)}</li>`).join('')}</ul>`;
+  }
+}
+
+// ── Recommendations ────────────────────────────────────────────────
+async function getRecommendations() {
+  const query = document.getElementById('rec-query').value.trim() || 'Suggest the best destinations for me based on my profile.';
+  const btn   = document.getElementById('rec-btn');
+  const out   = document.getElementById('rec-output');
+  const ph    = document.getElementById('rec-placeholder');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-ring"></span> Discovering…';
+  ph.style.display = 'none';
+  out.style.display = 'none';
+
+  const profile = {
+    ...getProfile(),
+    trip_style: document.getElementById('rec-style').value,
+    budget:     document.getElementById('rec-budget').value,
+  };
+
+  try {
+    const res  = await fetch('/api/recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, profile }),
+    });
+    const data = await res.json();
+    out.textContent   = data.recommendations || data.error;
+    out.style.display = 'block';
+  } catch (err) {
+    out.textContent   = `Error: ${err.message}`;
+    out.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-stars me-1"></i>Get AI Recommendations';
+  }
+}
+
+// ── Quick Plan (Dashboard) ─────────────────────────────────────────
+function quickPlan() {
+  const dest = document.getElementById('quick-dest').value.trim();
+  if (!dest) { alert('Please enter a destination.'); return; }
+  document.getElementById('itin-dest').value = dest;
+  document.getElementById('itin-budget').value = document.getElementById('quick-budget').value;
+  document.getElementById('itin-days').value   = document.getElementById('quick-days').value;
+  document.getElementById('itin-days-val').textContent = document.getElementById('quick-days').value;
+  showSection('itinerary');
+  setTimeout(generateItinerary, 300);
+}
+
+// ── Health check ───────────────────────────────────────────────────
+async function checkHealth() {
+  const el = document.getElementById('health-status');
+  el.textContent = 'Checking…'; el.className = 'ms-2 small text-muted';
+  try {
+    const res  = await fetch('/api/health');
+    const data = await res.json();
+    if (data.status === 'ok') { el.textContent = 'All systems go!'; el.className = 'ms-2 small text-success'; }
+    else                      { el.textContent = 'Degraded';        el.className = 'ms-2 small text-warning'; }
+  } catch {
+    el.textContent = 'Offline'; el.className = 'ms-2 small text-danger';
+  }
+}
+
+// ── Utility ────────────────────────────────────────────────────────
+function escHtml(t) {
+  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ───────────────────────────────────────────────────────────
+loadProfile();
+renderMembers();
+</script>
+</body>
+</html>
